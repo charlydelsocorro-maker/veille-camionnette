@@ -21,7 +21,7 @@ ZIP = "13300 Salon-de-Provence"
 RAYON_KM = 150
 PRIX_MAX = 11500
 ANNEE_MIN = 2019  # nouvelle forme (Partner III / Berlingo III / Combo E) uniquement
-KM_MAX = 170000
+KM_MAX = 140000
 
 # Référence : le Partner du frère (2022, 120 000 km, 11 500 €).
 # Toute annonce au moins aussi bien (année >= 2022 et km <= 120 000, prix <= PRIX_MAX) déclenche une alerte.
