@@ -5,6 +5,8 @@ Surveille AutoScout24 toutes les 15 minutes (Partner, Berlingo, Combo diesel, 20
 - **au moins aussi bien que la référence** : 2022 ou plus récent, 120 000 km max, 11 500 € max ;
 - ou notée « Super prix », « Bon prix » ou « Prix très bas » par AutoScout24.
 
+**Peugeot Expert** (plus grand) : 2017+, ≤ 13 000 €, ≤ 140 000 km, alerte uniquement sur « Super prix », « Bon prix » ou « Prix très bas ».
+
 ## Installation (10 minutes)
 
 1. **ntfy** : installe l'appli ntfy sur ton téléphone et abonne-toi à un sujet au nom difficile à deviner, par exemple `mistraloc-camion-8f3k2`.

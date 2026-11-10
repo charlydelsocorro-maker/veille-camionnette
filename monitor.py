@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Veille de bonnes affaires utilitaires (Partner / Berlingo / Combo) sur AutoScout24.
+Veille de bonnes affaires utilitaires (Partner / Berlingo / Combo / Expert) sur AutoScout24.
 Envoie une notification ntfy pour chaque nouvelle annonce jugée "bonne affaire".
 Aucune dépendance externe : uniquement la bibliothèque standard Python.
 """
@@ -32,10 +32,14 @@ REF_KM = 120000
 MOTS_LONG = ("XL", "LONG", "L2", "950")
 PAGES = 2  # pages de 20 annonces par modèle, triées des plus récentes aux plus anciennes
 
+# (marque, modèle, prix max, année min, petit utilitaire ?)
+# Le filtre « ancienne génération 1.6 » et la référence du frère ne s'appliquent qu'aux petits utilitaires.
 MODELES = [
-    ("peugeot", "partner"),
-    ("citroen", "berlingo"),
-    ("opel", "combo"),
+    ("peugeot", "partner", PRIX_MAX, ANNEE_MIN, True),
+    ("citroen", "berlingo", PRIX_MAX, ANNEE_MIN, True),
+    ("opel", "combo", PRIX_MAX, ANNEE_MIN, True),
+    # Expert : nouvelle forme depuis 2016 (le 1.6 BlueHDi existe aussi sur cette génération)
+    ("peugeot", "expert", 13000, 2017, False),
 ]
 
 # Évaluation de prix AutoScout24 : 0 = anormalement bas, 1 = super prix, 2 = bon prix, 3 = prix correct
@@ -49,10 +53,10 @@ UA = (
 )
 
 
-def url_recherche(marque, modele, page):
+def url_recherche(marque, modele, page, prix_max=PRIX_MAX, annee_min=ANNEE_MIN):
     params = {
-        "fregfrom": ANNEE_MIN,
-        "priceto": PRIX_MAX,
+        "fregfrom": annee_min,
+        "priceto": prix_max,
         "kmto": KM_MAX,
         "fuel": "D",
         "body": 13,          # utilitaire
@@ -133,9 +137,9 @@ def main():
     nouvelles = 0
     erreurs = 0
 
-    for marque, modele in MODELES:
+    for marque, modele, prix_max, annee_min, petit in MODELES:
         for page in range(1, PAGES + 1):
-            url = url_recherche(marque, modele, page)
+            url = url_recherche(marque, modele, page, prix_max, annee_min)
             try:
                 annonces = extraire_annonces(telecharger(url))
             except Exception as e:
@@ -160,7 +164,7 @@ def main():
                 mots = re.findall(r"[A-Z0-9]+", version.upper())
 
                 # Ancienne génération (moteur 1.6 HDi) : la nouvelle forme n'a que le 1.5 BlueHDi
-                if re.search(r"\b1[.,]6\b", version):
+                if petit and re.search(r"\b1[.,]6\b", version):
                     continue
 
                 # Version longue ?
@@ -170,13 +174,14 @@ def main():
                 try:
                     annee = int(str(t.get("firstRegistration", "")).split("-")[-1])
                     km = int(t.get("mileage") or 0)
-                    bat_reference = annee >= REF_ANNEE and 0 < km <= REF_KM
+                    bat_reference = petit and annee >= REF_ANNEE and 0 < km <= REF_KM
                 except ValueError:
                     bat_reference = False
 
                 bon_prix = evaluation in EVALUATIONS_ALERTE
                 # Une version longue ou une annonce qui bat la référence est signalée même à "prix correct"
-                if not (bon_prix or est_long or bat_reference):
+                # (pour l'Expert, déjà grand, on ne garde que les bons prix)
+                if not (bon_prix or (petit and est_long) or bat_reference):
                     continue
 
                 raisons = []
