@@ -159,6 +159,10 @@ def main():
                 version = v.get("modelVersionInput") or ""
                 mots = re.findall(r"[A-Z0-9]+", version.upper())
 
+                # Ancienne génération (moteur 1.6 HDi) : la nouvelle forme n'a que le 1.5 BlueHDi
+                if re.search(r"\b1[.,]6\b", version):
+                    continue
+
                 # Version longue ?
                 est_long = any(m in MOTS_LONG or m.startswith("950") for m in mots)
 
