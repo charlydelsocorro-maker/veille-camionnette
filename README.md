@@ -1,6 +1,6 @@
 # Veille utilitaires → ntfy
 
-Surveille AutoScout24 toutes les 15 minutes (Partner, Berlingo, Combo diesel, 2018+, ≤ 11 500 €, ≤ 170 000 km, 150 km autour de Salon-de-Provence) et envoie une notification ntfy pour chaque **nouvelle** annonce qui est :
+Surveille AutoScout24 toutes les 15 minutes (Partner, Berlingo, Combo diesel, 2019+ (nouvelle forme), ≤ 11 500 €, ≤ 170 000 km, 150 km autour de Salon-de-Provence) et envoie une notification ntfy pour chaque **nouvelle** annonce qui est :
 - une **version longue / XL** (alerte prioritaire, même à prix simplement correct) ;
 - **au moins aussi bien que la référence** : 2022 ou plus récent, 120 000 km max, 11 500 € max ;
 - ou notée « Super prix », « Bon prix » ou « Prix très bas » par AutoScout24.
