@@ -99,17 +99,30 @@ def sauver_vus(vus):
     SEEN_FILE.write_text(json.dumps(sorted(vus)[-2000:], indent=0))
 
 
-def notifier(titre, message, lien, priorite="high"):
+def photo_annonce(annonce):
+    """Première photo de l'annonce, en JPEG 720x540 (format bien affiché par ntfy)."""
+    images = annonce.get("images") or []
+    if not images:
+        return None
+    base = images[0].rsplit("/", 1)[0]  # retire le suffixe de taille (ex. /250x188.webp)
+    return f"{base}/720x540.jpg"
+
+
+def notifier(titre, message, lien, priorite="high", photo=None):
     if not NTFY_TOPIC:
-        print(f"[pas de NTFY_TOPIC] {titre} | {message} | {lien}")
+        print(f"[pas de NTFY_TOPIC] {titre} | {message} | {lien} | photo={photo}")
         return
     # Paramètres passés dans l'URL (UTF-8 OK, contrairement aux en-têtes HTTP)
-    q = urllib.parse.urlencode({
+    params = {
         "title": titre,
         "click": lien,
         "priority": priorite,
         "tags": "truck",
-    })
+    }
+    if photo:
+        params["attach"] = photo
+        params["filename"] = "photo.jpg"
+    q = urllib.parse.urlencode(params)
     url = f"{NTFY_SERVER.rstrip('/')}/{NTFY_TOPIC}?{q}"
     req = urllib.request.Request(url, data=message.encode("utf-8"), method="POST")
     urllib.request.urlopen(req, timeout=20).read()
@@ -183,7 +196,8 @@ def main():
                 lien = "https://www.autoscout24.fr" + a.get("url", "")
                 urgent = est_long or bat_reference or evaluation == 1
                 notifier(titre, "\n".join(lignes), lien,
-                         priorite="urgent" if urgent else "high")
+                         priorite="urgent" if urgent else "high",
+                         photo=photo_annonce(a))
                 nouvelles += 1
                 time.sleep(1)
 
