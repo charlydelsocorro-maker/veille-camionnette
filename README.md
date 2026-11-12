@@ -1,11 +1,13 @@
-# Veille utilitaires → ntfy
+# Veille Peugeot Partner → ntfy
 
-Surveille AutoScout24 toutes les 15 minutes (Partner, Berlingo, Combo diesel, 2019+ (nouvelle forme), ≤ 11 500 €, ≤ 140 000 km, 150 km autour de Salon-de-Provence) et envoie une notification ntfy pour chaque **nouvelle** annonce qui est :
-- une **version longue / XL** (alerte prioritaire, même à prix simplement correct) ;
-- **au moins aussi bien que la référence** : 2022 ou plus récent, 120 000 km max, 11 500 € max ;
-- ou notée « Super prix », « Bon prix » ou « Prix très bas » par AutoScout24.
+Surveille AutoScout24 toutes les 15 minutes et envoie une notification ntfy (avec photo) pour chaque **nouveau Peugeot Partner** :
+- nouvelle forme uniquement (2019+, moteur 1.5 BlueHDi ; les 1.6 HDi de l'ancienne génération sont écartés) ;
+- diesel, 10 000 € max, 140 000 km max, 150 km autour de Salon-de-Provence.
 
-**Peugeot Expert** (plus grand) : 2017+, ≤ 13 000 €, ≤ 140 000 km, alerte uniquement sur « Super prix », « Bon prix » ou « Prix très bas ».
+Toutes les annonces dans ces critères sont signalées. Priorité **urgente** pour :
+- une boîte **6 vitesses** (lue dans le titre « BVM6 », ou probable sur les 2022+) ;
+- une **version longue / XL** ;
+- un « Super prix » ou « Prix très bas » selon AutoScout24.
 
 ## Installation (10 minutes)
 
@@ -20,7 +22,7 @@ Surveille AutoScout24 toutes les 15 minutes (Partner, Berlingo, Combo diesel, 20
 
 ## Régler les critères
 
-Tout est en haut de `monitor.py` : `PRIX_MAX`, `ANNEE_MIN`, `KM_MAX`, `RAYON_KM`, `MODELES`, et `EVALUATIONS_ALERTE` (retire `2` pour ne garder que les « Super prix »).
+Tout est en haut de `monitor.py` : `PRIX_MAX`, `ANNEE_MIN`, `KM_MAX`, `RAYON_KM`, `MODELES`.
 
 ## À savoir
 

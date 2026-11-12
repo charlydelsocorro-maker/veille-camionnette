@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Veille de bonnes affaires utilitaires (Partner / Berlingo / Combo / Expert) sur AutoScout24.
-Envoie une notification ntfy pour chaque nouvelle annonce jugée "bonne affaire".
+Veille Peugeot Partner (nouvelle forme) sur AutoScout24.
+Envoie une notification ntfy pour chaque nouvelle annonce qui correspond aux critères.
 Aucune dépendance externe : uniquement la bibliothèque standard Python.
 """
 import json
@@ -19,27 +19,17 @@ NTFY_SERVER = os.environ.get("NTFY_SERVER", "https://ntfy.sh")
 
 ZIP = "13300 Salon-de-Provence"
 RAYON_KM = 150
-PRIX_MAX = 11500
-ANNEE_MIN = 2019  # nouvelle forme (Partner III / Berlingo III / Combo E) uniquement
+PRIX_MAX = 10000
+ANNEE_MIN = 2019  # nouvelle forme (Partner III) uniquement
 KM_MAX = 140000
-
-# Référence : le Partner du frère (2022, 120 000 km, 11 500 €).
-# Toute annonce au moins aussi bien (année >= 2022 et km <= 120 000, prix <= PRIX_MAX) déclenche une alerte.
-REF_ANNEE = 2022
-REF_KM = 120000
 
 # Mots qui signalent une version longue (XL / Long / L2 / 950 kg)
 MOTS_LONG = ("XL", "LONG", "L2", "950")
 PAGES = 2  # pages de 20 annonces par modèle, triées des plus récentes aux plus anciennes
 
-# (marque, modèle, prix max, année min, petit utilitaire ?)
-# Le filtre « ancienne génération 1.6 » et la référence du frère ne s'appliquent qu'aux petits utilitaires.
+# (marque, modèle, prix max, année min)
 MODELES = [
-    ("peugeot", "partner", PRIX_MAX, ANNEE_MIN, True),
-    ("citroen", "berlingo", PRIX_MAX, ANNEE_MIN, True),
-    ("opel", "combo", PRIX_MAX, ANNEE_MIN, True),
-    # Expert : nouvelle forme depuis 2016 (le 1.6 BlueHDi existe aussi sur cette génération)
-    ("peugeot", "expert", 13000, 2017, False),
+    ("peugeot", "partner", PRIX_MAX, ANNEE_MIN),
 ]
 
 # Évaluation de prix AutoScout24 : 0 = anormalement bas, 1 = super prix, 2 = bon prix, 3 = prix correct
@@ -137,7 +127,7 @@ def main():
     nouvelles = 0
     erreurs = 0
 
-    for marque, modele, prix_max, annee_min, petit in MODELES:
+    for marque, modele, prix_max, annee_min in MODELES:
         for page in range(1, PAGES + 1):
             url = url_recherche(marque, modele, page, prix_max, annee_min)
             try:
@@ -164,48 +154,56 @@ def main():
                 mots = re.findall(r"[A-Z0-9]+", version.upper())
 
                 # Ancienne génération (moteur 1.6 HDi) : la nouvelle forme n'a que le 1.5 BlueHDi
-                if petit and re.search(r"\b1[.,]6\b", version):
+                if re.search(r"\b1[.,]6\b", version):
                     continue
 
                 # Version longue ?
                 est_long = any(m in MOTS_LONG or m.startswith("950") for m in mots)
 
-                # Au moins aussi bien que le Partner du frère ?
+                # Boîte de vitesses (lue dans le titre de l'annonce)
+                vu = version.upper()
                 try:
                     annee = int(str(t.get("firstRegistration", "")).split("-")[-1])
-                    km = int(t.get("mileage") or 0)
-                    bat_reference = petit and annee >= REF_ANNEE and 0 < km <= REF_KM
                 except ValueError:
-                    bat_reference = False
+                    annee = 0
+                if "EAT8" in vu or "AUTO" in (v.get("transmission") or "").upper():
+                    boite, six = "Boîte automatique", False
+                elif re.search(r"BVM\s?6|6\s?VITESSES|\b6V\b", vu):
+                    boite, six = "⚙️ 6 vitesses", True
+                elif re.search(r"BVM\s?5|5\s?VITESSES|\b5V\b", vu):
+                    boite, six = "5 vitesses", False
+                elif annee >= 2022:
+                    boite, six = "⚙️ 6 vitesses probable (2022+)", True
+                else:
+                    boite, six = "Boîte non précisée (5 ou 6 vitesses)", False
 
+                # Toutes les annonces dans les critères sont signalées : la priorité indique les meilleures
                 bon_prix = evaluation in EVALUATIONS_ALERTE
-                # Une version longue ou une annonce qui bat la référence est signalée même à "prix correct"
-                # (pour l'Expert, déjà grand, on ne garde que les bons prix)
-                if not (bon_prix or (petit and est_long) or bat_reference):
-                    continue
-
                 raisons = []
+                if six:
+                    raisons.append(boite)
                 if est_long:
                     raisons.append("📏 VERSION LONGUE / XL")
-                if bat_reference:
-                    raisons.append("⭐ Mieux que le Partner de ton frère (2022, 120 000 km)")
                 if bon_prix:
                     raisons.append(LIBELLES.get(evaluation, ""))
 
                 lignes = [
-                    " · ".join(raisons),
+                    " · ".join(raisons) or "Nouvelle annonce",
                     f"{prix.get('priceFormatted', '?')}",
                     f"{t.get('firstRegistration', '?')} · {v.get('mileageInKm', '?')}",
                     f"{loc.get('city', '?')} ({loc.get('zip', '')}) · {loc.get('distanceToSearchLocationInKm', '?')} km",
+                    boite if not six else "",
                     version,
                 ]
+                lignes = [l for l in lignes if l]
 
-                prefixe = "📏 XL — " if est_long else ""
+                prefixe = ("📏 XL " if est_long else "") + ("⚙️6 " if six else "")
+                prefixe = prefixe.strip() + " — " if prefixe else ""
                 titre = f"{prefixe}{v.get('make', '')} {v.get('model', '')} — {prix.get('priceFormatted', '')}"
                 lien = "https://www.autoscout24.fr" + a.get("url", "")
-                urgent = est_long or bat_reference or evaluation == 1
+                urgent = est_long or six or evaluation in (0, 1)
                 notifier(titre, "\n".join(lignes), lien,
-                         priorite="urgent" if urgent else "high",
+                         priorite="urgent" if urgent else ("high" if bon_prix else "default"),
                          photo=photo_annonce(a))
                 nouvelles += 1
                 time.sleep(1)
